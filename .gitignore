@@ -1,0 +1,6 @@
+.env
+*.key
+*.pem
+*.pfx
+*.bak
+.vscode/
