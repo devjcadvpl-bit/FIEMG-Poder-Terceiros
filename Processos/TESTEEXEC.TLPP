@@ -1,0 +1,37 @@
+#Include "Protheus.ch"
+
+User Function TESTEEXEC(aParam)
+
+Local cCodEmp   := ""
+Local cCodFil   := ""
+Local oPoderTerceiros := fiemg.terceiros.PoderTerceiros():New()
+Local lOk       := .T.
+
+Default aParam := {}
+
+If Len(aParam) > 0
+   cCodEmp := aParam[1]
+   cCodFil := aParam[2]
+Else
+    cCodEmp := "99"
+    cCodFil := "01"
+EndIf
+
+If (cCodEmp<>Nil) .And. (cCodFil<>Nil)
+
+    //Conecta na empresa
+    RpcSetEnv(cCodEmp, cCodFil)
+    nModulo := 02
+
+    lOk := oPoderTerceiros:SetPoderTerceiros("000000001","N1 ","000001","01","N")
+
+    If lOk
+        FWAlertSuccess("Poder de terceiros gerado com sucesso","FIEMG")
+    Else 
+        FWAlertError(oPoderTerceiros:GetError(),"FIEMG")
+    EndIf
+
+    //Fecha ambiente atual
+    RpcClearEnv()
+
+EndIf

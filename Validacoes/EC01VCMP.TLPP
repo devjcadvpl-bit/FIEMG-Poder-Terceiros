@@ -1,0 +1,67 @@
+#Include "Protheus.ch"
+
+/*/{Protheus.doc} EC01VCMP
+Eefetua validações nos campos de poder de terceiros no cadastro de fornecedores 
+@type function
+@author Dev Advpl
+@since 28/08/2026
+@return Logical, Indica se permite ou não a gravação nos campos
+/*/
+User Function EC01VCMP()
+
+    Local lValid    := .T.
+    Local oModel    := FwModelActive()  
+    Local oModelSA2 := oModel:GetModel("SA2MASTER")  
+    Local cAliFor   := "SA2"  
+    Local cCampos   := SubStr(AllTrim(ReadVar()),4,Len(AllTrim(ReadVar())))  
+    
+    (cAliFor)->(dbSetOrder(1))
+
+    Do Case 
+
+        Case cCampos == "A2_ZPDRTER" .And. oModelSA2:GetValue('A2_ZPDRTER') == 'N'
+
+            oModelSA2:LoadValue('A2_ZFORTER','')            
+            oModelSA2:LoadValue('A2_ZLOJTER','')            
+            oModelSA2:LoadValue('A2_ZNOMTER','')    
+            oModelSA2:LoadValue('A2_ZPGTTER','')            
+            oModelSA2:LoadValue('A2_ZTESTER','')  
+            oModelSA2:LoadValue('A2_ZSERTER','')  
+
+        Case cCampos == "A2_ZFORTER" .And. !Empty(AllTrim(oModelSA2:GetValue('A2_ZFORTER'))) .And. !(cAliFor)->(dbSeek(xFilial("SA2") + oModelSA2:GetValue('A2_ZFORTER')))
+
+            Help(,,"EC01VCMP",,"Fornecedor inválido",1,0,,,,,,{"Verifique o código digitado e tente novamente!"})                
+            lValid := .F.
+
+         Case cCampos == "A2_ZLOJTER" .And. !Empty(AllTrim(oModelSA2:GetValue('A2_ZLOJTER'))) .And. !(cAliFor)->(dbSeek(xFilial("SA2") + oModelSA2:GetValue('A2_ZFORTER') + oModelSA2:GetValue('A2_ZLOJTER')))
+
+            Help(,,"EC01VCMP",,"Fornecedor inválido",1,0,,,,,,{"Verifique o código digitado e tente novamente!"})                                
+            lValid := .F.
+
+    End Case
+
+Return lValid 
+
+/*/{Protheus.doc} EC01VTOK
+Validação do poder de terceiros antes da gravação
+@type function
+@author Dev Advpl
+@since 29/08/2026
+@return Logical, Indica se permite ou não a gravação dos campos relacionados a poder de terceiros
+/*/
+User Function EC01VTOK() 
+
+    Local lValid    := .T.
+    Local oModel    := FwModelActive()  
+    Local oModelSA2 := oModel:GetModel("SA2MASTER")  
+
+    If oModelSA2:GetValue('A2_ZPDRTER') == 'S' .And. (Empty(AllTrim(oModelSA2:GetValue('A2_ZFORTER'))) .Or. Empty(AllTrim(oModelSA2:GetValue('A2_ZLOJTER'))) .Or.;
+                                                      Empty(AllTrim(oModelSA2:GetValue('A2_ZPGTTER'))) .Or. Empty(AllTrim(oModelSA2:GetValue('A2_ZTESTER'))) .Or.;
+                                                      Empty(AllTrim(oModelSA2:GetValue('A2_ZSERTER'))))
+
+        Help(,,"EC01VTOK",,"Preenchimento obrigatório na aba 'Poder de Terceiros' ",1,0,,,,,,{"Verifique se todos os campos foram preenchidos."})                                
+        lValid := .F.
+
+    EndIf
+
+Return lValid

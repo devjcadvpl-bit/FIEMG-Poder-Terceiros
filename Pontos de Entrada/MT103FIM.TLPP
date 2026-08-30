@@ -1,0 +1,34 @@
+#Include "Protheus.ch"
+
+/*/{Protheus.doc} MT103FIM
+P.E utilizado após a gravação da nota fiscal de entrada
+@type function
+@author Dev Advpl
+@since 29/08/2026
+/*/
+User Function MT103FIM()
+
+    Local lGerNfS           := .T.
+    Local oPoderTerceiros   := fiemg.terceiros.PoderTerceiros():New()
+
+    If Inclui .And. !Empty(AllTrim(cNFiscal))
+
+        FwMsgRun(,{ || lGerNfS := oPoderTerceiros:SetPoderTerceiros(cNFiscal,cSerie,cA100For,cLoja,cTipo) }, "Aguarde", "Gerando nota fiscal de saida para poder de terceiros...")
+
+        Do Case 
+
+            Case lGerNfS .And. !Empty(oPoderTerceiros:GetNumPed())
+
+                FWAlertSuccess("Nota fiscal de saida gerada com sucesso - Pedido de Venda "+oPoderTerceiros:GetNumPed(),"Poder de Terceiros")
+
+            Case !lGerNfS 
+
+                Help(,,"MT103FIM",,"Erro ao gerar a nota fiscal de saida em poder de terceiros' ",1,0,,,,,,{oPoderTerceiros:GetError()})                                
+
+        End Case 
+
+    EndIf 
+
+    FreeObj(oPoderTerceiros)
+
+Return Nil

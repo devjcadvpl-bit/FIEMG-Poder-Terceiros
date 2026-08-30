@@ -1,0 +1,17 @@
+#Include "Protheus.ch"
+
+/*/{Protheus.doc} MA020TDOK
+P.E executado antes da gravação do fornecedor
+@type function
+@author Dev Advpl
+@since 29/08/2026
+@return Logical, Indica se permite ou não a gravação
+/*/
+User Function MA020TDOK()
+
+    Local lTudoOk := .T.
+
+    //Consistência nos campos de poder de terceiros        
+    lTudoOk := U_EC01VTOK()
+
+Return lTudoOk

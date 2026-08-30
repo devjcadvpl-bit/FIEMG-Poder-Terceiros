@@ -1,0 +1,381 @@
+#Include "Protheus.ch"
+
+Namespace fiemg.terceiros
+
+/*/{Protheus.doc} PoderTerceiros
+Objeto para processo de gravação sobre notras fiscais de poder de terceiros
+@type class
+@author Dev Advpl
+@since 29/08/2026
+/*/
+Class PoderTerceiros
+
+    Data cError     As Character 
+    Data cAliFor    As Character
+    Data cAliNfe    As Character
+    Data cAliINf    As Character
+    Data cAliCli    As Character
+    Data cNumPed    As Character
+    
+    Public Method New()
+
+    Public Method GetError()                As Character
+    Public Method SetPoderTerceiros()       As Logical
+    Public Method GetNumPed()               As Character
+    
+    Private Method SetPedidoVenda()         As Logical
+    Private Method SetDeletePedidoVenda()   As Logical
+    Private Method SetNotaFiscal()          As Logical
+    
+EndClass 
+
+/*/{Protheus.doc} PoderTerceiros::New
+Construtor
+@type method
+@author Dev Advpl
+@since 29/08/2026
+/*/
+Method New() Class PoderTerceiros
+    
+	::cError    := ""
+    ::cAliFor   := "SA2"
+    ::cAliNfe   := "SF1"
+    ::cAliINf   := "SD1"
+    ::cAliCli   := "SA1"
+    ::cNumPed   := ""
+
+Return Nil
+
+/*/{Protheus.doc} PoderTerceiros::GetError
+Retorna error da classe
+@type method
+@author Dev Advpl
+@since 29/08/2026
+@return Character, Erro da classe
+/*/
+Method GetError() As Character Class PoderTerceiros
+Return (::cError)
+
+/*/{Protheus.doc} PoderTerceiros::GetNumPed
+Retorna o numero do pedido de venda gerado
+@type method
+@author Dev Advpl
+@since 30/08/2026
+@return Character, Número do pedido de venda
+/*/
+Method GetNumPed()  As Character Class PoderTerceiros
+Return (::cNumPed )
+
+/*/{Protheus.doc} PoderTerceiros::SetPoderTerceiros
+Processo para gerar pedidod e venda e nota fiscal de saida para poder de terceiros
+@type method
+@author Dev Advpl
+@since 29/08/2026
+@param cNfEnt,  Character,  Nota fiscal de entrada posicionada
+@param cSerieNf,Character,  Série da nota fiscal de entrada posicionada
+@param cForcPt, Character,  Fornecedor da nota fiscal de entrada
+@param cLojaPt, Character,  Loja do fornecedor da nota fiscal de entrada
+@param cTipoNf, Character,  Tipo da nota fiscal posicionada
+@return Logical, Indica se gerou  pedido+nota de saida
+/*/
+Method SetPoderTerceiros(cNfEnt As Character, cSerieNf As Character, cForcPt As Character, cLojaPt As Character, cTipoNf As Character) As Logical Class PoderTerceiros
+
+    Local lOk           := .T.
+  
+    Local lFornecedor   := .T.
+    Local lNotaFiscal   := .T.
+    Local lItensNf      := .T.
+    Local lCliente      := .T.
+    Local cCondPag      := ""
+    Local cTes          := ""
+    Local cSerieNfS     := ""
+
+    Local aArea     := GetArea()
+    Local aAreaFor  := (::cAliFor)->(GetArea())
+    Local aAreaNfe  := (::cAliNfe)->(GetArea())
+    Local aAreaINf  := (::cAliINf)->(GetArea())
+    Local aAreaCli  := (::cAliCli)->(GetArea())
+
+    (::cAliFor)->(dbSetOrder(1))
+    (::cAliNfe)->(dbSetOrder(1))
+    (::cAliINf)->(dbSetOrder(1))
+    (::cAliCli)->(dbSetOrder(3))
+
+    //Verifica se o fornecedor da nota tem o vinculo com poder de terceiros
+    If  (::cAliFor)->(dbSeek(xFilial(::cAliFor)+cForcPt+cLojaPt)) .And. (::cAliFor)->A2_ZPDRTER == 'S'  
+
+        cCondPag    := (::cAliFor)->A2_ZPGTTER
+        cTes        := (::cAliFor)->A2_ZTESTER 
+        cSerieNfS   := (::cAliFor)->A2_ZSERTER
+
+        lFornecedor := (::cAliFor)->(dbSeek(xFilial(::cAliFor)+(::cAliFor)->A2_ZFORTER+(::cAliFor)->A2_ZLOJTER))
+        lNotaFiscal := (::cAliNfe)->(dbSeek(xFilial(::cAliNfe)+cNfEnt+cSerieNf+cForcPt+cLojaPt+cTipoNf)) 
+        lItensNf    := (::cAliINf)->(dbSeek(xFilial(::cAliINf)+cNfEnt+cSerieNf+cForcPt+cLojaPt)) 
+        lCliente    := (::cAliCli)->(dbSeek(xFilial(::cAliCli)+(::cAliFor)->A2_CGC))
+
+        //Caso tenha, inicia o processo para gerar pedido de venda + nota fiscal de saida 
+        If lNotaFiscal .And. lItensNf .And. lCliente
+
+            //Gera o pedido de venda
+            lOk := ::SetPedidoVenda(cCondPag,cTes)
+
+            If lOk
+                
+                //Gera a nota fiscal de saida poder de terceiros
+                lOk := ::SetNotaFiscal(cSerieNfS) 
+
+            EndIf 
+
+        Else 
+
+            ::cError := "Não foi possível localizar os dados do cliente e a nota fiscal de entrada para gerar a emissão em poder de terceiros."
+            lOk := .F. 
+
+        EndIf
+
+    EndIf 
+
+    RestArea(aArea)
+    RestArea(aAreaFor)
+    RestArea(aAreaNfe)
+    RestArea(aAreaINf)
+    RestArea(aAreaCli)
+
+Return lOk
+
+/*/{Protheus.doc} PoderTerceiros::SetPedidoVenda
+Gera o pedido de venda que será vinculado a nota fiscal de entrada
+@type method
+@author Dev Advpl
+@since 29/08/2026
+@param cCondPag,Character,  Condicao de pagamento par agerar o pedido de venda
+@param cTes,    Character,  TES utilizada nos itens para gerar o pedido de venda
+@return Logical, Indica se efetuou a gravação do pedido de venda
+/*/
+Method SetPedidoVenda(cCondPag As Character, cTes As Character) As Logical Class PoderTerceiros
+
+    Local lPedidoVenda  := .T.
+    Local nLinha        := 1
+    Local nOpc          := 3
+    Local aLogAuto      := {}
+    Local nX            := 0
+    
+    Local aCabSc5       := {}
+    Local aLinha        := {}
+    Local aItmSC6       := {}
+
+    Private lMsErroAuto     := .F.
+	Private lAutoErrNoFile  := .T.
+	Private lMSHelpAuto     := .F.
+
+    //Numero do pedido
+    ::cNumPed := GetSxeNum("SC5","C5_NUM")
+
+    //Monta estrutura do cabeçalho
+    aAdd(aCabSc5, {"C5_FILIAL"   , xFilial('SC5')            , Nil})
+    aAdd(aCabSc5, {"C5_NUM"      , ::cNumPed                 , Nil})
+    aAdd(aCabSc5, {"C5_TIPO"     , "N"                       , Nil})
+    aAdd(aCabSc5, {"C5_CLIENTE"  , (::cAliCli)->A1_COD       , Nil})
+    aAdd(aCabSc5, {"C5_LOJACLI"  , (::cAliCli)->A1_LOJA      , Nil})
+    aAdd(aCabSc5, {"C5_LOJAENT"  , (::cAliCli)->A1_LOJA      , Nil})
+    aAdd(aCabSc5, {"C5_CONDPAG"  ,  cCondPag                 , Nil})
+
+    //Monta estrutura para os itens do pedido
+    While (::cAliINf)->(!Eof()) .And. (::cAliINf)->(D1_FILIAL+D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA) == (::cAliNfe)->(F1_FILIAL+F1_DOC+F1_SERIE+F1_FORNECE+F1_LOJA)
+       
+        aAdd(aLinha,{"C6_ITEM"   , StrZero(nLinha,TamSx3("C6_ITEM")[1]) , Nil})
+        aAdd(aLinha,{"C6_PRODUTO", (::cAliINf)->D1_COD                  , Nil})
+        aAdd(aLinha,{"C6_QTDVEN" , (::cAliINf)->D1_QUANT                , Nil})
+        aAdd(aLinha,{"C6_QTDLIB" , (::cAliINf)->D1_QUANT                , Nil})
+        aAdd(aLinha,{"C6_PRCVEN" , (::cAliINf)->D1_VUNIT                , Nil})
+        aAdd(aLinha,{"C6_PRUNIT" , (::cAliINf)->D1_VUNIT                , Nil})
+        aAdd(aLinha,{"C6_VALOR"  , (::cAliINf)->D1_TOTAL                , Nil})
+        aAdd(aLinha,{"C6_TES"    , cTes                                 , Nil})
+        aAdd(aLinha,{"C6_BLQ"    , 'N'                                  , Nil})
+
+        aAdd(aItmSC6, aLinha)
+        aLinha := {}
+
+        (::cAliINf)->(dbSkip())
+
+    EndDo 
+
+    MSExecAuto({|a, b, c, d| MATA410(a, b, c, d)}, aCabSc5, aItmSC6, nOpc, .F.)
+
+    //Em caso de erro, gera o log
+    If lMsErroAuto
+
+        aLogAuto := GetAutoGRLog()
+
+        For nX := 1 To Len(aLogAuto)
+            ::cError += aLogAuto[nX] +Chr(13)+Chr(10)
+        Next nX
+
+        lPedidoVenda := .F.
+        RollBackSX8()
+
+    Else 
+        ConfirmSx8()
+    EndIf
+
+Return lPedidoVenda
+
+/*/{Protheus.doc} PoderTerceiros::SetDeletePedidoVenda
+Deleta o pedido de venda caso ocorra algum erro na geração da nota fiscal
+@type method
+@author Dev Advpl
+@since 29/08/2026
+@return Logical, Indica se efetuou a exclusão do pedido
+/*/
+Method SetDeletePedidoVenda() As Logical Class PoderTerceiros
+
+    Local lPedidoVenda  := .T.
+    Local nOpc          := 5
+    Local aLogAuto      := {}
+    Local nX            := 0
+
+    Local cAliPed       := "SC5"
+    Local cAliItm       := "SC6"
+    
+    Local aCabSc5       := {}
+    Local aLinha        := {}
+    Local aItmSC6       := {}
+
+    Private lMsErroAuto     := .F.
+	Private lAutoErrNoFile  := .T.
+	Private lMSHelpAuto     := .F.
+
+    (cAliPed)->(dbSetOrder(1))
+    (cAliItm)->(dbSetOrder(1))
+
+    (cAliPed)->(MsSeek(xFilial(cAliPed)+::cNumPed))
+    (cAliItm)->(MsSeek(xFilial(cAliItm)+::cNumPed))
+
+    //Monta estrutura do cabeçalho
+    aAdd(aCabSc5, {"C5_FILIAL"   , xFilial('SC5')  , Nil})
+    aAdd(aCabSc5, {"C5_NUM"      , ::cNumPed       , Nil})
+   
+    //Monta estrutura para os itens do pedido
+    While (cAliItm)->(!Eof()) .And. (cAliItm)->(C5_FILIAL+C5_NUM) == (cAliItm)->(C6_FILIAL+C6_NUM)
+       
+        aAdd(aLinha,{"C6_ITEM"   , (cAliItm)->C6_ITEM   , Nil})
+        aAdd(aLinha,{"C6_PRODUTO", (::cAliINf)->D1_COD  , Nil})
+        aAdd(aLinha,{"C6_QTDVEN" , (::cAliINf)->D1_QUANT, Nil})
+        
+        aAdd(aItmSC6, aLinha)
+        aLinha := {}
+
+        (::cAliINf)->(dbSkip())
+
+    EndDo 
+
+    MSExecAuto({|a, b, c, d| MATA410(a, b, c, d)}, aCabSc5, aItmSC6, nOpc, .F.)
+
+    //Em caso de erro, gera o log
+    If lMsErroAuto
+
+        aLogAuto := GetAutoGRLog()
+
+        For nX := 1 To Len(aLogAuto)
+            ::cError += aLogAuto[nX] +Chr(13)+Chr(10)
+        Next nX
+
+        lPedidoVenda := .F.
+
+    EndIf
+
+Return lPedidoVenda
+
+/*/{Protheus.doc} PoderTerceiros::SetNotaFiscal
+Método para gerar a nota fiscal de saida para poder de terceiros
+@type method
+@author Dev Advpl
+@since 30/08/2026
+@param cSerieNfS, Character, Serie que será atribuida a nota fiscal em poder de terceiros
+@return Logical, Indica se a nota foi gerada com sucesso
+/*/
+Method SetNotaFiscal(cSerieNfS As Character) As Logical Class PoderTerceiros
+
+    Local lNotaFiscal   := .T.
+    Local aPvlNfs       := {}
+	Local aBloqueio     := {}
+    Local nX            := 0
+    Local aParam460     := Array(30)
+    Local cNotaFiscal   := ""
+    
+    Local cAliPed       := "SC5"
+    Local cAliItm       := "SC6"
+
+    Local aArea         := GetArea()
+    Local aAreaPed      := (cAliPed)->(GetArea())
+    Local aAreaItm      := (cAliItm)->(GetArea())
+
+    Pergunte("MT460A",.F.)
+
+    For nX := 1 to 30
+        aParam460[nX] := &("mv_par" + StrZero(nX, 2) )
+    Next nX
+
+    // Liberacao de pedido
+	Ma410LbNfs( 2, @aPvlNfs, @aBloqueio )
+
+    // Checa itens liberados
+	Ma410LbNfs( 1, @aPvlNfs, @aBloqueio )
+    
+	// Caso tenha itens liberados manda faturar
+    Do Case 
+
+        Case  Empty(aBloqueio) .And. !Empty(aPvlNfs)
+
+            (cAliPed)->(dbSetOrder(1))
+            (cAliItm)->(dbSetOrder(1))
+
+            (cAliPed)->(MsSeek(xFilial(cAliPed)+::cNumPed))
+            (cAliItm)->(MsSeek(xFilial(cAliItm)+::cNumPed))
+
+            //Gera a nota fiscal de saida
+            cNotaFiscal:= MaPvlNfs( aPvlNfs,;
+                                   cSerieNfS,;
+                                    aParam460[01] == 1,;
+                                    aParam460[02] == 1,;
+                                    aParam460[03] == 1,;
+                                    aParam460[04] == 1,;
+                                    aParam460[05] == 1,;
+                                    aParam460[07],;
+                                    aParam460[08],;
+                                    aParam460[16] == 1,;
+                                    aParam460[16] == 2)
+
+            If !Empty(AllTrim(cNotaFiscal))
+
+                (::cAliNfe)->(RecLock(::cAliNfe,.F.))
+                (::cAliNfe)->F1_ZPVPTER := ::cNumPed 
+                (::cAliNfe)->(MsUnLock())
+
+            Else 
+
+                //Se não gerou nota, exclui o pedido
+                ::SetDeletePedidoVenda()
+
+                ::cError    := "Não foi possível gerar a nota fiscal em poder de terceiros. Verifique os parâmetros para emissão e tente novamente."
+                lNotaFiscal := .F.
+
+            EndIf 
+
+    Case !Empty(aBloqueio)
+
+        ::cError    := "Não foi possível liberar o pedido de venda."+CRLF+"Verifique a existência de bloqueio de crédito e/ou estoque."
+        lNotaFiscal := .F.
+
+    OtherWise 
+        
+        ::cError    := "Erro ao gerar nota fiscal para poder de terceiros."
+        lNotaFiscal := .F.
+
+    End Case
+
+    RestArea(aArea)
+    RestArea(aAreaPed)
+    RestArea(aAreaItm)
+
+Return lNotaFiscal
