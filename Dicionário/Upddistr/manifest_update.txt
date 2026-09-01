@@ -1,0 +1,78 @@
+MANIFESTO DE ATUALIZAÇÃO
+
+Data : 31/08/2026
+Hora : 22:39:07
+Arquivo de atualização diferencial baseado em projeto gerado pelo Configurador
+Projeto : 000088
+Descrição : EC - PODER DE TERCEIROS                           
+Versão : 0001
+Release de referência : 12.1.2510 
+Responsável pelo Projeto: 000001 - leandro
+Geração do Pacote: 000001 - leandro
+-----------------------------
+Componentes do arquivo de atualização :
+
+------------
+SX3
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZPDRTER
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZFORTER
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZLOJTER
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZNOMTER
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZPGTTER
+
+Operação:Exclusão
+Campo : A2_TESTER 
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZTESTER
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZSERTER
+
+Operação:Inclusão ou Alteração
+Campo : F1_ZPVPTER
+
+
+------------
+SX7
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZFORTER
+Sequência : 001
+
+Operação:Inclusão ou Alteração
+Campo : A2_ZFORTER
+Sequência : 002
+
+
+------------
+SXA
+
+Operação:Inclusão ou Alteração
+Tabela : SA2
+Ordem : 9
+Agrupamento :    
+
+
+------------
+Helps (hlppack*.txt)
+
+Chave : A2_ZPDRTER
+Chave : A2_ZFORTER
+Chave : A2_ZLOJTER
+Chave : A2_ZNOMTER
+Chave : A2_ZPGTTER
+Chave : A2_TESTER 
+Chave : A2_ZTESTER
+Chave : A2_ZSERTER
+Chave : F1_ZPVPTER

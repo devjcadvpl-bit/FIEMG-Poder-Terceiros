@@ -1,0 +1,17 @@
+000116PA2_ZPDRTER                   USER                                                        Indique se o fornecedor possui vínculo
+com outro fornecedor para a emissão de
+nota fiscal de poder de terceiros.
+000117PA2_ZFORTER                   USER                                                        Informe o código do fornecedor para o
+qual serão gerados o pedido e a nota
+fiscal de saída de poder de terceiros.
+000000PA2_ZLOJTER                   USER                                                        000000PA2_ZNOMTER                   USER                                                        000086PA2_ZPGTTER                   USER                                                        Condicao de Pagamento para o pedido de
+venda que será gerado em poder de
+terceiros
+000074PA2_TESTER                    USER                                                        TES incluida no item do pedido que será
+vinculada ao poder de terceiros
+000078PA2_ZTESTER                   USER                                                        TES que será considerada para gerar o
+pedido de venda em poder de terceiros
+000091PA2_ZSERTER                   USER                                                        Campo para definir a serie da nota
+fiscal de saida que será gerada em
+poderde terceiros
+000000PF1_ZPVPTER                   USER                                                        
